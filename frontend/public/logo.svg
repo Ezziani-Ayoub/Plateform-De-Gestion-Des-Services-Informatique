@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <!-- Background Blue Container -->
+  <rect width="500" height="500" rx="30" fill="#00A0E9" />
+  
+  <!-- Central White Card with Smooth Rounded Corners -->
+  <rect x="85" y="85" width="330" height="330" rx="80" fill="#FFFFFF" />
+
+  <!-- Blue Ground Line -->
+  <line x1="105" y1="330" x2="395" y2="330" stroke="#00A0E9" stroke-width="5" stroke-linecap="round" />
+
+  <!-- Center Plant / Sprout -->
+  <!-- Stem -->
+  <line x1="250" y1="230" x2="250" y2="350" stroke="#00A0E9" stroke-width="5" stroke-linecap="round" />
+  <!-- Top Sprout Bud -->
+  <path d="M 250 205 C 235 225, 235 250, 250 270 C 265 250, 265 225, 250 205 Z" fill="#00A0E9" />
+  <!-- Left Leaf -->
+  <path d="M 248 260 C 220 255, 210 275, 220 295 C 235 295, 245 280, 248 260 Z" fill="#00A0E9" />
+  <!-- Right Leaf -->
+  <path d="M 252 260 C 280 255, 290 275, 280 295 C 265 295, 255 280, 252 260 Z" fill="#00A0E9" />
+
+  <!-- Left Figure (Girl) -->
+  <!-- Head -->
+  <circle cx="175" cy="172" r="22" fill="#00A0E9" />
+  <!-- Hair / Silhouette detail -->
+  <path d="M 155 175 C 150 160, 170 150, 185 158 C 195 168, 188 185, 175 185 Z" fill="#00A0E9" />
+  <!-- Body / Dress & Arms -->
+  <path d="M 175 192 
+           C 160 215, 130 228, 118 232 
+           C 114 233, 117 240, 122 239 
+           C 140 234, 160 230, 163 245 
+           L 110 282 
+           C 105 285, 110 292, 115 289 
+           L 182 278 
+           L 200 345 
+           C 202 352, 210 350, 208 343 
+           L 194 290 
+           C 215 270, 230 240, 218 230 
+           C 215 228, 205 234, 195 237 
+           C 190 220, 182 205, 175 192 Z" fill="#00A0E9" />
+
+  <!-- Right Figure (Boy) -->
+  <!-- Head -->
+  <circle cx="325" cy="172" r="22" fill="#00A0E9" />
+  <!-- Collar / Shirt outline -->
+  <path d="M 325 192 
+           L 305 230 
+           C 290 237, 280 230, 282 228 
+           C 295 220, 310 212, 310 205 
+           C 310 198, 285 240, 270 248 
+           C 265 250, 268 256, 273 254 
+           C 290 246, 312 235, 314 245 
+           L 285 343 
+           C 283 350, 291 352, 293 345 
+           L 310 288 
+           L 380 290 
+           C 386 290, 388 283, 382 280 
+           L 332 245 
+           C 336 230, 345 210, 325 192 Z" fill="#00A0E9" />
+</svg>

@@ -1,0 +1,13 @@
+{
+  "name": "pgsi-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "cd backend && set JAVA_HOME=C:\\Program Files\\Eclipse Adoptium\\jdk-25.0.2.10-hotspot && mvn spring-boot:run",
+    "start:frontend": "cd frontend && npm run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
