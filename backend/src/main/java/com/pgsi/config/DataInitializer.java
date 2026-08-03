@@ -4,12 +4,17 @@ import com.pgsi.entity.ERole;
 import com.pgsi.entity.Equipment;
 import com.pgsi.entity.EquipmentStatus;
 import com.pgsi.entity.Role;
+import com.pgsi.entity.Ticket;
+import com.pgsi.entity.TicketCategory;
+import com.pgsi.entity.TicketPriority;
+import com.pgsi.entity.TicketStatus;
 import com.pgsi.entity.User;
 import com.pgsi.repository.EquipmentRepository;
 import com.pgsi.repository.RoleRepository;
+import com.pgsi.repository.TicketRepository;
 import com.pgsi.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -17,15 +22,24 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.util.Set;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
+
+    private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final EquipmentRepository equipmentRepository;
+    private final TicketRepository ticketRepository;
     private final PasswordEncoder passwordEncoder;
+
+    public DataInitializer(RoleRepository roleRepository, UserRepository userRepository, EquipmentRepository equipmentRepository, TicketRepository ticketRepository, PasswordEncoder passwordEncoder) {
+        this.roleRepository = roleRepository;
+        this.userRepository = userRepository;
+        this.equipmentRepository = equipmentRepository;
+        this.ticketRepository = ticketRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Override
     public void run(String... args) {
@@ -57,8 +71,9 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         // 3. Technician User
+        User techUser;
         if (!userRepository.existsByUsername("tech")) {
-            User techUser = User.builder()
+            techUser = User.builder()
                     .username("tech")
                     .email("tech@pgsi.ma")
                     .password(passwordEncoder.encode("tech123"))
@@ -66,11 +81,30 @@ public class DataInitializer implements CommandLineRunner {
                     .enabled(true)
                     .roles(Set.of(techRole, userRole))
                     .build();
-            userRepository.save(techUser);
+            techUser = userRepository.save(techUser);
             log.info("Created default technician user: tech / tech123");
+        } else {
+            techUser = userRepository.findByUsername("tech").get();
         }
 
-        // 4. Sample Equipment
+        // 4. Employee User
+        User empUser;
+        if (!userRepository.existsByUsername("employee")) {
+            empUser = User.builder()
+                    .username("employee")
+                    .email("employee@pgsi.ma")
+                    .password(passwordEncoder.encode("emp123"))
+                    .fullName("Karim Employee")
+                    .enabled(true)
+                    .roles(Set.of(userRole))
+                    .build();
+            empUser = userRepository.save(empUser);
+            log.info("Created default employee user: employee / emp123");
+        } else {
+            empUser = userRepository.findByUsername("employee").get();
+        }
+
+        // 5. Sample Equipment
         if (equipmentRepository.count() == 0) {
             equipmentRepository.save(Equipment.builder()
                     .name("MacBook Pro M3 Max")
@@ -91,6 +125,7 @@ public class DataInitializer implements CommandLineRunner {
                     .location("Stock Central DSI")
                     .purchaseDate(LocalDate.now().minusMonths(2))
                     .description("PC Portable pour nouvel arrivant")
+                    .assignedTo(empUser)
                     .build());
 
             equipmentRepository.save(Equipment.builder()
@@ -123,7 +158,32 @@ public class DataInitializer implements CommandLineRunner {
                     .description("Matériel obsolète réformé")
                     .build());
 
-            log.info("Seeded 5 sample equipment items for Phase 1.");
+            log.info("Seeded 5 sample equipment items.");
+        }
+
+        // 6. Sample Support Tickets
+        if (ticketRepository.count() == 0) {
+            ticketRepository.save(Ticket.builder()
+                    .title("Écran noir au démarrage du PC Dell")
+                    .description("Mon PC Dell Latitude 5540 ne s'allume plus depuis ce matin, voyant batterie clignote orange.")
+                    .category(TicketCategory.HARDWARE)
+                    .priority(TicketPriority.HIGH)
+                    .status(TicketStatus.OPEN)
+                    .createdBy(empUser)
+                    .build());
+
+            ticketRepository.save(Ticket.builder()
+                    .title("Demande de licence Microsoft Office & VPN")
+                    .description("Besoin d'activer l'accès VPN distant et la suite Office 365 pour travail à domicile.")
+                    .category(TicketCategory.ACCESS_RIGHTS)
+                    .priority(TicketPriority.MEDIUM)
+                    .status(TicketStatus.IN_PROGRESS)
+                    .createdBy(empUser)
+                    .assignedTo(techUser)
+                    .resolutionNotes("Accès VPN configuré, en attente d'activation de la licence.")
+                    .build());
+
+            log.info("Seeded sample IT support tickets.");
         }
     }
 }

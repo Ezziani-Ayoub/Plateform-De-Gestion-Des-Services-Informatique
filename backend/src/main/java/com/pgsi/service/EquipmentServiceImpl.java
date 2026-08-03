@@ -4,32 +4,32 @@ import com.pgsi.dto.CreateEquipmentRequest;
 import com.pgsi.dto.EquipmentDto;
 import com.pgsi.dto.UpdateEquipmentRequest;
 import com.pgsi.entity.Equipment;
+import com.pgsi.entity.EquipmentStatus;
 import com.pgsi.entity.User;
 import com.pgsi.exception.BadRequestException;
 import com.pgsi.exception.ResourceNotFoundException;
 import com.pgsi.repository.EquipmentRepository;
 import com.pgsi.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 public class EquipmentServiceImpl implements EquipmentService {
 
     private final EquipmentRepository equipmentRepository;
     private final UserRepository userRepository;
 
+    public EquipmentServiceImpl(EquipmentRepository equipmentRepository, UserRepository userRepository) {
+        this.equipmentRepository = equipmentRepository;
+        this.userRepository = userRepository;
+    }
+
     @Override
     @Transactional(readOnly = true)
     public Page<EquipmentDto> getEquipments(String search, String category, String status, Pageable pageable) {
-        String searchParam = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
-        String categoryParam = (category != null && !category.trim().isEmpty()) ? category.trim() : null;
-        String statusParam = (status != null && !status.trim().isEmpty()) ? status.trim() : null;
-
-        return equipmentRepository.filterEquipments(searchParam, categoryParam, statusParam, pageable)
+        return equipmentRepository.filterEquipments(search, category, status, pageable)
                 .map(this::mapToDto);
     }
 
@@ -45,19 +45,19 @@ public class EquipmentServiceImpl implements EquipmentService {
     @Transactional
     public EquipmentDto createEquipment(CreateEquipmentRequest request) {
         if (equipmentRepository.existsBySerialNumber(request.getSerialNumber())) {
-            throw new BadRequestException("Equipment with serial number '" + request.getSerialNumber() + "' already exists");
+            throw new BadRequestException("Un équipement avec ce numéro de série existe déjà");
         }
 
         User assignedUser = null;
-        if (request.getAssignedToUserId() != null) {
-            assignedUser = userRepository.findById(request.getAssignedToUserId())
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.getAssignedToUserId()));
+        if (request.getAssignedToId() != null) {
+            assignedUser = userRepository.findById(request.getAssignedToId())
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.getAssignedToId()));
         }
 
         Equipment equipment = Equipment.builder()
                 .name(request.getName())
                 .serialNumber(request.getSerialNumber())
-                .category(request.getCategory().toUpperCase())
+                .category(request.getCategory())
                 .status(request.getStatus())
                 .location(request.getLocation())
                 .purchaseDate(request.getPurchaseDate())
@@ -65,8 +65,8 @@ public class EquipmentServiceImpl implements EquipmentService {
                 .assignedTo(assignedUser)
                 .build();
 
-        Equipment saved = equipmentRepository.save(equipment);
-        return mapToDto(saved);
+        Equipment savedEquipment = equipmentRepository.save(equipment);
+        return mapToDto(savedEquipment);
     }
 
     @Override
@@ -75,29 +75,21 @@ public class EquipmentServiceImpl implements EquipmentService {
         Equipment equipment = equipmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment", "id", id));
 
-        // If serial number changed, check uniqueness
-        if (!equipment.getSerialNumber().equalsIgnoreCase(request.getSerialNumber()) &&
-                equipmentRepository.existsBySerialNumber(request.getSerialNumber())) {
-            throw new BadRequestException("Equipment with serial number '" + request.getSerialNumber() + "' already exists");
+        if (request.getName() != null) equipment.setName(request.getName());
+        if (request.getCategory() != null) equipment.setCategory(request.getCategory());
+        if (request.getStatus() != null) equipment.setStatus(request.getStatus());
+        if (request.getLocation() != null) equipment.setLocation(request.getLocation());
+        if (request.getPurchaseDate() != null) equipment.setPurchaseDate(request.getPurchaseDate());
+        if (request.getDescription() != null) equipment.setDescription(request.getDescription());
+
+        if (request.getAssignedToId() != null) {
+            User assignedUser = userRepository.findById(request.getAssignedToId())
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.getAssignedToId()));
+            equipment.setAssignedTo(assignedUser);
         }
 
-        User assignedUser = null;
-        if (request.getAssignedToUserId() != null) {
-            assignedUser = userRepository.findById(request.getAssignedToUserId())
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.getAssignedToUserId()));
-        }
-
-        equipment.setName(request.getName());
-        equipment.setSerialNumber(request.getSerialNumber());
-        equipment.setCategory(request.getCategory().toUpperCase());
-        equipment.setStatus(request.getStatus());
-        equipment.setLocation(request.getLocation());
-        equipment.setPurchaseDate(request.getPurchaseDate());
-        equipment.setDescription(request.getDescription());
-        equipment.setAssignedTo(assignedUser);
-
-        Equipment updated = equipmentRepository.save(equipment);
-        return mapToDto(updated);
+        Equipment updatedEquipment = equipmentRepository.save(equipment);
+        return mapToDto(updatedEquipment);
     }
 
     @Override
@@ -106,6 +98,26 @@ public class EquipmentServiceImpl implements EquipmentService {
         Equipment equipment = equipmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment", "id", id));
         equipmentRepository.delete(equipment);
+    }
+
+    @Override
+    @Transactional
+    public EquipmentDto assignEquipmentToUser(Long equipmentId, Long userId) {
+        Equipment equipment = equipmentRepository.findById(equipmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Equipment", "id", equipmentId));
+
+        if (userId != null) {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+            equipment.setAssignedTo(user);
+            equipment.setStatus(EquipmentStatus.IN_USE);
+        } else {
+            equipment.setAssignedTo(null);
+            equipment.setStatus(EquipmentStatus.AVAILABLE);
+        }
+
+        Equipment updatedEquipment = equipmentRepository.save(equipment);
+        return mapToDto(updatedEquipment);
     }
 
     private EquipmentDto mapToDto(Equipment equipment) {
@@ -118,8 +130,9 @@ public class EquipmentServiceImpl implements EquipmentService {
                 .location(equipment.getLocation())
                 .purchaseDate(equipment.getPurchaseDate())
                 .description(equipment.getDescription())
-                .assignedToUserId(equipment.getAssignedTo() != null ? equipment.getAssignedTo().getId() : null)
-                .assignedToUserName(equipment.getAssignedTo() != null ? equipment.getAssignedTo().getFullName() : null)
+                .assignedToId(equipment.getAssignedTo() != null ? equipment.getAssignedTo().getId() : null)
+                .assignedToUsername(equipment.getAssignedTo() != null ? equipment.getAssignedTo().getUsername() : null)
+                .assignedToFullName(equipment.getAssignedTo() != null ? equipment.getAssignedTo().getFullName() : null)
                 .createdAt(equipment.getCreatedAt())
                 .updatedAt(equipment.getUpdatedAt())
                 .build();

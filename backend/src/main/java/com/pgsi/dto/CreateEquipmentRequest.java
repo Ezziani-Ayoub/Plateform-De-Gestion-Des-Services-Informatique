@@ -3,42 +3,62 @@ package com.pgsi.dto;
 import com.pgsi.entity.EquipmentStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
 public class CreateEquipmentRequest {
 
-    @NotBlank(message = "Equipment name is required")
-    @Size(max = 100, message = "Equipment name cannot exceed 100 characters")
+    @NotBlank(message = "Le nom de l'equipement est obligatoire")
     private String name;
 
-    @NotBlank(message = "Serial number is required")
-    @Size(max = 100, message = "Serial number cannot exceed 100 characters")
+    @NotBlank(message = "Le numero de serie est obligatoire")
     private String serialNumber;
 
-    @NotBlank(message = "Category is required")
-    @Size(max = 50, message = "Category cannot exceed 50 characters")
+    @NotBlank(message = "La categorie est obligatoire")
     private String category;
 
-    @NotNull(message = "Equipment status is required")
+    @NotNull(message = "Le statut est obligatoire")
     private EquipmentStatus status;
 
-    @Size(max = 100, message = "Location cannot exceed 100 characters")
     private String location;
-
     private LocalDate purchaseDate;
-
-    @Size(max = 500, message = "Description cannot exceed 500 characters")
     private String description;
+    private Long assignedToId;
 
-    private Long assignedToUserId;
+    public CreateEquipmentRequest() {}
+
+    public CreateEquipmentRequest(String name, String serialNumber, String category, EquipmentStatus status, String location, LocalDate purchaseDate, String description, Long assignedToId) {
+        this.name = name;
+        this.serialNumber = serialNumber;
+        this.category = category;
+        this.status = status;
+        this.location = location;
+        this.purchaseDate = purchaseDate;
+        this.description = description;
+        this.assignedToId = assignedToId;
+    }
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    public String getSerialNumber() { return serialNumber; }
+    public void setSerialNumber(String serialNumber) { this.serialNumber = serialNumber; }
+
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
+
+    public EquipmentStatus getStatus() { return status; }
+    public void setStatus(EquipmentStatus status) { this.status = status; }
+
+    public String getLocation() { return location; }
+    public void setLocation(String location) { this.location = location; }
+
+    public LocalDate getPurchaseDate() { return purchaseDate; }
+    public void setPurchaseDate(LocalDate purchaseDate) { this.purchaseDate = purchaseDate; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public Long getAssignedToId() { return assignedToId; }
+    public void setAssignedToId(Long assignedToId) { this.assignedToId = assignedToId; }
 }

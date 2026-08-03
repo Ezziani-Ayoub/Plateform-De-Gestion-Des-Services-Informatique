@@ -3,7 +3,6 @@ package com.pgsi.config;
 import com.pgsi.security.JwtAuthEntryPoint;
 import com.pgsi.security.JwtAuthTokenFilter;
 import com.pgsi.security.UserDetailsServiceImpl;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,12 +21,17 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@RequiredArgsConstructor
 public class WebSecurityConfig {
 
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtAuthEntryPoint unauthorizedHandler;
     private final JwtAuthTokenFilter jwtAuthTokenFilter;
+
+    public WebSecurityConfig(UserDetailsServiceImpl userDetailsService, JwtAuthEntryPoint unauthorizedHandler, JwtAuthTokenFilter jwtAuthTokenFilter) {
+        this.userDetailsService = userDetailsService;
+        this.unauthorizedHandler = unauthorizedHandler;
+        this.jwtAuthTokenFilter = jwtAuthTokenFilter;
+    }
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
@@ -58,9 +62,7 @@ public class WebSecurityConfig {
                         .anyRequest().authenticated()
                 );
 
-        // Required for H2 console frame loading in browser if enabled
         http.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
-
         http.authenticationProvider(authenticationProvider());
         http.addFilterBefore(jwtAuthTokenFilter, UsernamePasswordAuthenticationFilter.class);
 

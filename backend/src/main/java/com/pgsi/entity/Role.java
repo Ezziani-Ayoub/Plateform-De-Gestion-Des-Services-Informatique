@@ -1,22 +1,43 @@
 package com.pgsi.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
 
 @Entity
 @Table(name = "roles")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Role {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 30, unique = true, nullable = false)
+    @Column(length = 20, nullable = false, unique = true)
     private ERole name;
+
+    public Role() {}
+
+    public Role(Integer id, ERole name) {
+        this.id = id;
+        this.name = name;
+    }
+
+    public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
+
+    public ERole getName() { return name; }
+    public void setName(ERole name) { this.name = name; }
+
+    public static Builder builder() { return new Builder(); }
+
+    public static class Builder {
+        private Integer id;
+        private ERole name;
+
+        public Builder id(Integer id) { this.id = id; return this; }
+        public Builder name(ERole name) { this.name = name; return this; }
+
+        public Role build() {
+            return new Role(id, name);
+        }
+    }
 }

@@ -1,4 +1,7 @@
 export type EquipmentStatus = 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE' | 'RETIRED';
+export type TicketStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+export type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type TicketCategory = 'HARDWARE' | 'SOFTWARE' | 'NETWORK' | 'ACCESS_RIGHTS' | 'OTHER';
 
 export interface User {
   id: number;
@@ -27,8 +30,9 @@ export interface Equipment {
   location?: string;
   purchaseDate?: string;
   description?: string;
-  assignedToUserId?: number;
-  assignedToUserName?: string;
+  assignedToId?: number;
+  assignedToUsername?: string;
+  assignedToFullName?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -41,10 +45,44 @@ export interface CreateEquipmentPayload {
   location?: string;
   purchaseDate?: string;
   description?: string;
-  assignedToUserId?: number;
+  assignedToId?: number;
 }
 
 export interface UpdateEquipmentPayload extends CreateEquipmentPayload {}
+
+export interface Ticket {
+  id: number;
+  title: string;
+  description: string;
+  category: TicketCategory;
+  priority: TicketPriority;
+  status: TicketStatus;
+  createdById: number;
+  createdByUsername: string;
+  createdByFullName: string;
+  assignedToId?: number;
+  assignedToUsername?: string;
+  assignedToFullName?: string;
+  equipmentId?: number;
+  equipmentName?: string;
+  resolutionNotes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTicketPayload {
+  title: string;
+  description: string;
+  category: TicketCategory;
+  priority: TicketPriority;
+  equipmentId?: number;
+}
+
+export interface UpdateTicketStatusPayload {
+  status?: TicketStatus;
+  assignedToId?: number;
+  resolutionNotes?: string;
+}
 
 export interface PageResponse<T> {
   content: T[];

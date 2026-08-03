@@ -12,4 +12,5 @@ public interface EquipmentService {
     EquipmentDto createEquipment(CreateEquipmentRequest request);
     EquipmentDto updateEquipment(Long id, UpdateEquipmentRequest request);
     void deleteEquipment(Long id);
+    EquipmentDto assignEquipmentToUser(Long equipmentId, Long userId);
 }

@@ -6,7 +6,6 @@ import com.pgsi.dto.MessageResponse;
 import com.pgsi.dto.UpdateEquipmentRequest;
 import com.pgsi.service.EquipmentService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,40 +16,33 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/equipment")
-@RequiredArgsConstructor
+@RequestMapping("/api/v1/equipments")
 public class EquipmentController {
 
     private final EquipmentService equipmentService;
 
-    /** Maps Java camelCase property names to PostgreSQL snake_case column names for native queries. */
-    private String toColumnName(String field) {
-        switch (field) {
-            case "createdAt":      return "created_at";
-            case "updatedAt":      return "updated_at";
-            case "serialNumber":   return "serial_number";
-            case "purchaseDate":   return "purchase_date";
-            case "assignedTo":     return "assigned_user_id";
-            default:               return field; // id, name, category, status, location already match
-        }
+    public EquipmentController(EquipmentService equipmentService) {
+        this.equipmentService = equipmentService;
     }
 
     @GetMapping
-    public ResponseEntity<Page<EquipmentDto>> getEquipments(
+    public ResponseEntity<Page<EquipmentDto>> getAllEquipments(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "id") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir
-    ) {
-        String columnName = toColumnName(sortBy);
-        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(columnName).ascending() : Sort.by(columnName).descending();
-        Pageable pageable = PageRequest.of(page, size, sort);
+            @RequestParam(defaultValue = "10") int size) {
 
-        Page<EquipmentDto> equipments = equipmentService.getEquipments(search, category, status, pageable);
-        return ResponseEntity.ok(equipments);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<EquipmentDto> result = equipmentService.getEquipments(search, category, status, pageable);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TECHNICIAN')")
+    public ResponseEntity<EquipmentDto> createEquipment(@Valid @RequestBody CreateEquipmentRequest request) {
+        EquipmentDto created = equipmentService.createEquipment(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @GetMapping("/{id}")
@@ -59,19 +51,9 @@ public class EquipmentController {
         return ResponseEntity.ok(equipment);
     }
 
-    @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
-    public ResponseEntity<EquipmentDto> createEquipment(@Valid @RequestBody CreateEquipmentRequest request) {
-        EquipmentDto created = equipmentService.createEquipment(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
-    }
-
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
-    public ResponseEntity<EquipmentDto> updateEquipment(
-            @PathVariable Long id,
-            @Valid @RequestBody UpdateEquipmentRequest request
-    ) {
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TECHNICIAN')")
+    public ResponseEntity<EquipmentDto> updateEquipment(@PathVariable Long id, @RequestBody UpdateEquipmentRequest request) {
         EquipmentDto updated = equipmentService.updateEquipment(id, request);
         return ResponseEntity.ok(updated);
     }
@@ -80,6 +62,13 @@ public class EquipmentController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> deleteEquipment(@PathVariable Long id) {
         equipmentService.deleteEquipment(id);
-        return ResponseEntity.ok(new MessageResponse("Equipment deleted successfully"));
+        return ResponseEntity.ok(new MessageResponse("Equipement supprime avec succes"));
+    }
+
+    @PutMapping("/{id}/assign/{userId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TECHNICIAN')")
+    public ResponseEntity<EquipmentDto> assignEquipment(@PathVariable Long id, @PathVariable Long userId) {
+        EquipmentDto updated = equipmentService.assignEquipmentToUser(id, userId);
+        return ResponseEntity.ok(updated);
     }
 }
