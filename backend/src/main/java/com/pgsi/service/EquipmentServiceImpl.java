@@ -9,6 +9,7 @@ import com.pgsi.entity.User;
 import com.pgsi.exception.BadRequestException;
 import com.pgsi.exception.ResourceNotFoundException;
 import com.pgsi.repository.EquipmentRepository;
+import com.pgsi.repository.EquipmentSpecification;
 import com.pgsi.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,7 +30,16 @@ public class EquipmentServiceImpl implements EquipmentService {
     @Override
     @Transactional(readOnly = true)
     public Page<EquipmentDto> getEquipments(String search, String category, String status, Pageable pageable) {
-        return equipmentRepository.filterEquipments(search, category, status, pageable)
+        EquipmentStatus statusEnum = null;
+        if (status != null && !status.isBlank()) {
+            try {
+                statusEnum = EquipmentStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException ignored) {
+                // unknown status value — treat as no filter
+            }
+        }
+        return equipmentRepository.findAll(
+                EquipmentSpecification.withFilters(search, category, statusEnum), pageable)
                 .map(this::mapToDto);
     }
 

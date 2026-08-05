@@ -13,27 +13,27 @@ export interface EquipmentFilterParams {
 
 export const equipmentService = {
   async getEquipments(params: EquipmentFilterParams = {}): Promise<PageResponse<Equipment>> {
-    const response = await api.get<PageResponse<Equipment>>('/equipment', { params });
+    const response = await api.get<PageResponse<Equipment>>('/equipments', { params });
     return response.data;
   },
 
   async getEquipmentById(id: number): Promise<Equipment> {
-    const response = await api.get<Equipment>(`/equipment/${id}`);
+    const response = await api.get<Equipment>(`/equipments/${id}`);
     return response.data;
   },
 
   async createEquipment(payload: CreateEquipmentPayload): Promise<Equipment> {
-    const response = await api.post<Equipment>('/equipment', payload);
+    const response = await api.post<Equipment>('/equipments', payload);
     return response.data;
   },
 
   async updateEquipment(id: number, payload: UpdateEquipmentPayload): Promise<Equipment> {
-    const response = await api.put<Equipment>(`/equipment/${id}`, payload);
+    const response = await api.put<Equipment>(`/equipments/${id}`, payload);
     return response.data;
   },
 
   async deleteEquipment(id: number): Promise<{ message: string }> {
-    const response = await api.delete<{ message: string }>(`/equipment/${id}`);
+    const response = await api.delete<{ message: string }>(`/equipments/${id}`);
     return response.data;
   }
 };

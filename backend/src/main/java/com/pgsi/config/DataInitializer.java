@@ -9,6 +9,7 @@ import com.pgsi.entity.TicketCategory;
 import com.pgsi.entity.TicketPriority;
 import com.pgsi.entity.TicketStatus;
 import com.pgsi.entity.User;
+import com.pgsi.repository.DepartmentRepository;
 import com.pgsi.repository.EquipmentRepository;
 import com.pgsi.repository.RoleRepository;
 import com.pgsi.repository.TicketRepository;
@@ -29,13 +30,15 @@ public class DataInitializer implements CommandLineRunner {
 
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
+    private final DepartmentRepository departmentRepository;
     private final EquipmentRepository equipmentRepository;
     private final TicketRepository ticketRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public DataInitializer(RoleRepository roleRepository, UserRepository userRepository, EquipmentRepository equipmentRepository, TicketRepository ticketRepository, PasswordEncoder passwordEncoder) {
+    public DataInitializer(RoleRepository roleRepository, UserRepository userRepository, DepartmentRepository departmentRepository, EquipmentRepository equipmentRepository, TicketRepository ticketRepository, PasswordEncoder passwordEncoder) {
         this.roleRepository = roleRepository;
         this.userRepository = userRepository;
+        this.departmentRepository = departmentRepository;
         this.equipmentRepository = equipmentRepository;
         this.ticketRepository = ticketRepository;
         this.passwordEncoder = passwordEncoder;
@@ -52,6 +55,31 @@ public class DataInitializer implements CommandLineRunner {
                 .orElseGet(() -> roleRepository.save(Role.builder().name(ERole.ROLE_TECHNICIAN).build()));
         Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
                 .orElseGet(() -> roleRepository.save(Role.builder().name(ERole.ROLE_ADMIN).build()));
+
+        // 1b. Default Departments
+        com.pgsi.entity.Department dsiDept = departmentRepository.findByName("Direction des Systèmes d'Information")
+                .orElseGet(() -> {
+                    com.pgsi.entity.Department d = new com.pgsi.entity.Department();
+                    d.setName("Direction des Systèmes d'Information");
+                    d.setDescription("Département Informatique et Support IT");
+                    return departmentRepository.save(d);
+                });
+
+        com.pgsi.entity.Department rhDept = departmentRepository.findByName("Ressources Humaines")
+                .orElseGet(() -> {
+                    com.pgsi.entity.Department d = new com.pgsi.entity.Department();
+                    d.setName("Ressources Humaines");
+                    d.setDescription("Gestion du personnel et recrutement");
+                    return departmentRepository.save(d);
+                });
+
+        com.pgsi.entity.Department financeDept = departmentRepository.findByName("Finance & Comptabilité")
+                .orElseGet(() -> {
+                    com.pgsi.entity.Department d = new com.pgsi.entity.Department();
+                    d.setName("Finance & Comptabilité");
+                    d.setDescription("Gestion financière et comptable");
+                    return departmentRepository.save(d);
+                });
 
         // 2. Admin User
         User adminUser;

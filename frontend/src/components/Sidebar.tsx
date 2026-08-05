@@ -1,11 +1,12 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Monitor, Ticket } from 'lucide-react';
+import { LayoutDashboard, Monitor, Ticket, Users } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 export const Sidebar: React.FC = () => {
   const { user } = useAuth();
 
+  const isAdmin = user?.roles?.some(r => r === 'ROLE_ADMIN') ?? false;
   const isAdminOrTech = user?.roles?.some(r => r === 'ROLE_ADMIN' || r === 'ROLE_TECHNICIAN') ?? false;
 
   const navItems = [
@@ -14,6 +15,12 @@ export const Sidebar: React.FC = () => {
       path: '/dashboard',
       icon: LayoutDashboard,
       show: true,
+    },
+    {
+      name: 'Utilisateurs',
+      path: '/users',
+      icon: Users,
+      show: isAdmin,
     },
     {
       name: 'Équipements IT',

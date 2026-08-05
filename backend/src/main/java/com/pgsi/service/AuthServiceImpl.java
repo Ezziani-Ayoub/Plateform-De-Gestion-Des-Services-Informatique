@@ -74,6 +74,10 @@ public class AuthServiceImpl implements AuthService {
                 .fullName(user.getFullName())
                 .enabled(user.getEnabled())
                 .roles(roles)
+                .departmentId(user.getDepartment() != null ? user.getDepartment().getId() : null)
+                .departmentName(user.getDepartment() != null ? user.getDepartment().getName() : null)
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
                 .build();
     }
 }

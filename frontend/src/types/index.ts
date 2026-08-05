@@ -9,6 +9,45 @@ export interface User {
   email: string;
   fullName: string;
   roles: string[];
+  enabled?: boolean;
+  departmentId?: number;
+  departmentName?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Department {
+  id: number;
+  name: string;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateUserPayload {
+  username: string;
+  email: string;
+  password?: string;
+  fullName?: string;
+  roles?: string[];
+  departmentId?: number;
+}
+
+export interface UpdateUserPayload {
+  fullName?: string;
+  email?: string;
+  password?: string;
+  roles?: string[];
+  departmentId?: number;
+  enabled?: boolean;
+}
+
+export interface DashboardStats {
+  totalUsers: number;
+  totalEquipments: number;
+  assignedEquipments: number;
+  availableEquipments: number;
+  maintenanceEquipments: number;
 }
 
 export interface JwtResponse {
