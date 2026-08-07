@@ -1,5 +1,6 @@
 package com.pgsi.config;
 
+import com.pgsi.entity.Department;
 import com.pgsi.entity.ERole;
 import com.pgsi.entity.Equipment;
 import com.pgsi.entity.EquipmentStatus;
@@ -57,25 +58,25 @@ public class DataInitializer implements CommandLineRunner {
                 .orElseGet(() -> roleRepository.save(Role.builder().name(ERole.ROLE_ADMIN).build()));
 
         // 1b. Default Departments
-        com.pgsi.entity.Department dsiDept = departmentRepository.findByName("Direction des Systèmes d'Information")
+        Department dsiDept = departmentRepository.findByName("Direction des Systèmes d'Information")
                 .orElseGet(() -> {
-                    com.pgsi.entity.Department d = new com.pgsi.entity.Department();
+                    Department d = new Department();
                     d.setName("Direction des Systèmes d'Information");
                     d.setDescription("Département Informatique et Support IT");
                     return departmentRepository.save(d);
                 });
 
-        com.pgsi.entity.Department rhDept = departmentRepository.findByName("Ressources Humaines")
+        Department rhDept = departmentRepository.findByName("Ressources Humaines")
                 .orElseGet(() -> {
-                    com.pgsi.entity.Department d = new com.pgsi.entity.Department();
+                    Department d = new Department();
                     d.setName("Ressources Humaines");
                     d.setDescription("Gestion du personnel et recrutement");
                     return departmentRepository.save(d);
                 });
 
-        com.pgsi.entity.Department financeDept = departmentRepository.findByName("Finance & Comptabilité")
+        Department financeDept = departmentRepository.findByName("Finance & Comptabilité")
                 .orElseGet(() -> {
-                    com.pgsi.entity.Department d = new com.pgsi.entity.Department();
+                    Department d = new Department();
                     d.setName("Finance & Comptabilité");
                     d.setDescription("Gestion financière et comptable");
                     return departmentRepository.save(d);
