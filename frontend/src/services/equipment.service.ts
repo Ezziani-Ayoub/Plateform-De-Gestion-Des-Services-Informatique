@@ -35,5 +35,23 @@ export const equipmentService = {
   async deleteEquipment(id: number): Promise<{ message: string }> {
     const response = await api.delete<{ message: string }>(`/equipments/${id}`);
     return response.data;
+  },
+
+  async importEquipments(file: File): Promise<import('../types').ExcelImportResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post<import('../types').ExcelImportResult>('/equipments/import', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  async downloadTemplate(): Promise<Blob> {
+    const response = await api.get('/equipments/import/template', {
+      responseType: 'blob',
+    });
+    return response.data;
   }
 };

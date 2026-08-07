@@ -4,25 +4,34 @@ import com.pgsi.dto.CreateEquipmentRequest;
 import com.pgsi.dto.EquipmentDto;
 import com.pgsi.dto.MessageResponse;
 import com.pgsi.dto.UpdateEquipmentRequest;
+import com.pgsi.dto.ExcelImportResultDto;
 import com.pgsi.service.EquipmentService;
+import com.pgsi.service.ExcelImportService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/v1/equipments")
 public class EquipmentController {
 
     private final EquipmentService equipmentService;
+    private final ExcelImportService excelImportService;
 
-    public EquipmentController(EquipmentService equipmentService) {
+    public EquipmentController(EquipmentService equipmentService, ExcelImportService excelImportService) {
         this.equipmentService = equipmentService;
+        this.excelImportService = excelImportService;
     }
 
     @GetMapping
@@ -70,5 +79,22 @@ public class EquipmentController {
     public ResponseEntity<EquipmentDto> assignEquipment(@PathVariable Long id, @PathVariable Long userId) {
         EquipmentDto updated = equipmentService.assignEquipmentToUser(id, userId);
         return ResponseEntity.ok(updated);
+    }
+
+    @PostMapping("/import")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TECHNICIAN')")
+    public ResponseEntity<ExcelImportResultDto> importEquipments(@RequestParam("file") MultipartFile file) {
+        ExcelImportResultDto result = excelImportService.importEquipments(file);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/import/template")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TECHNICIAN')")
+    public ResponseEntity<byte[]> downloadTemplate() throws IOException {
+        byte[] excelBytes = excelImportService.generateTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.setContentDispositionFormData("attachment", "modele_import_equipements.xlsx");
+        return new ResponseEntity<>(excelBytes, headers, HttpStatus.OK);
     }
 }

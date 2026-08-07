@@ -50,6 +50,13 @@ export interface DashboardStats {
   maintenanceEquipments: number;
 }
 
+export interface ExcelImportResult {
+  totalRows: number;
+  successCount: number;
+  skippedCount: number;
+  errors: string[];
+}
+
 export interface JwtResponse {
   token: string;
   type: string;

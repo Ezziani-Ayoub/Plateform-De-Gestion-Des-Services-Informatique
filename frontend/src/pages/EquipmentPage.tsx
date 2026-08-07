@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useEquipment } from '../hooks/useEquipment';
+import { equipmentService } from '../services/equipment.service';
 import { Badge } from '../components/Badge';
 import { Modal } from '../components/Modal';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { Equipment, EquipmentStatus, CreateEquipmentPayload } from '../types';
-import { Plus, Search, Filter, Edit2, Trash2, Monitor, RefreshCw, AlertCircle } from 'lucide-react';
+import { Equipment, EquipmentStatus, CreateEquipmentPayload, ExcelImportResult } from '../types';
+import { Plus, Search, Filter, Edit2, Trash2, Monitor, RefreshCw, AlertCircle, FileSpreadsheet, Upload, Download, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 export const EquipmentPage: React.FC = () => {
   const {
@@ -26,6 +27,13 @@ export const EquipmentPage: React.FC = () => {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Excel Import Modal States
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importResult, setImportResult] = useState<ExcelImportResult | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
 
   // Form Fields State
   const [formData, setFormData] = useState<CreateEquipmentPayload>({
@@ -100,6 +108,50 @@ export const EquipmentPage: React.FC = () => {
     }
   };
 
+  const handleOpenImportModal = () => {
+    setSelectedFile(null);
+    setImportResult(null);
+    setImportError(null);
+    setIsImportModalOpen(true);
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const blob = await equipmentService.downloadTemplate();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'modele_import_equipements.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err: any) {
+      alert('Erreur lors du téléchargement du modèle Excel.');
+    }
+  };
+
+  const handleImportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile) return;
+
+    setIsImporting(true);
+    setImportError(null);
+    setImportResult(null);
+
+    try {
+      const result = await equipmentService.importEquipments(selectedFile);
+      setImportResult(result);
+      if (result.successCount > 0) {
+        refresh();
+      }
+    } catch (err: any) {
+      setImportError(err.response?.data?.message || err.message || 'Erreur lors de l\'importation du fichier Excel.');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Actions */}
@@ -121,6 +173,13 @@ export const EquipmentPage: React.FC = () => {
             title="Rafraîchir"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            onClick={handleOpenImportModal}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-xl transition-all shadow-sm flex items-center gap-2"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>Importer Excel</span>
           </button>
           <button
             onClick={handleOpenAddModal}
@@ -422,10 +481,137 @@ export const EquipmentPage: React.FC = () => {
         isOpen={deletingId !== null}
         onClose={() => setDeletingId(null)}
         onConfirm={handleConfirmDelete}
-        title="Supprimer l'Équipement"
+        title="Supprimer l'équipement"
         message="Êtes-vous sûr de vouloir supprimer cet équipement ? Cette action est irréversible."
         isLoading={isSubmitting}
       />
+
+      {/* Excel Import Modal */}
+      <Modal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        title="Importer des Équipements via Excel"
+      >
+        <div className="space-y-5">
+          {/* Info Banner & Template Link */}
+          <div className="p-4 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-100 text-emerald-700 rounded-xl">
+                <FileSpreadsheet className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-emerald-900">Format accepté : .xlsx, .xls</p>
+                <p className="text-[11px] text-emerald-700">Téléchargez le modèle pré-configuré pour un import garanti sans erreur.</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleDownloadTemplate}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-50 text-xs font-semibold rounded-xl transition-all shadow-sm shrink-0"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Télécharger le modèle</span>
+            </button>
+          </div>
+
+          {/* Upload Form */}
+          <form onSubmit={handleImportSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                Sélectionnez votre fichier Excel *
+              </label>
+              <div className="border-2 border-dashed border-gray-300 hover:border-emerald-500 bg-gray-50/50 hover:bg-emerald-50/30 rounded-2xl p-6 text-center transition-all cursor-pointer relative">
+                <input
+                  type="file"
+                  accept=".xlsx, .xls"
+                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <div className="flex flex-col items-center justify-center gap-2">
+                  <Upload className="w-8 h-8 text-gray-400" />
+                  {selectedFile ? (
+                    <div>
+                      <p className="text-xs font-bold text-gray-900">{selectedFile.name}</p>
+                      <p className="text-[10px] text-gray-500">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700">Cliquez ou glissez-déposez votre fichier ici</p>
+                      <p className="text-[10px] text-gray-400">Formats supportés : .xlsx, .xls</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* General Error Message */}
+            {importError && (
+              <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{importError}</span>
+              </div>
+            )}
+
+            {/* Results Feedback Box */}
+            {importResult && (
+              <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span>Résultat de l'importation :</span>
+                  <span>{importResult.successCount} / {importResult.totalRows} importé(s)</span>
+                </div>
+
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full font-semibold">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> {importResult.successCount} succès
+                  </span>
+                  {importResult.skippedCount > 0 && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full font-semibold">
+                      <AlertTriangle className="w-3.5 h-3.5" /> {importResult.skippedCount} ignoré(s)
+                    </span>
+                  )}
+                </div>
+
+                {importResult.errors.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-gray-200">
+                    <p className="text-[11px] font-bold text-gray-700 mb-1">Détails des avertissements / erreurs :</p>
+                    <ul className="max-h-32 overflow-y-auto text-[11px] text-rose-600 space-y-1 list-disc pl-4">
+                      {importResult.errors.map((err, idx) => (
+                        <li key={idx}>{err}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => setIsImportModalOpen(false)}
+                disabled={isImporting}
+                className="px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
+              >
+                Fermer
+              </button>
+              <button
+                type="submit"
+                disabled={!selectedFile || isImporting}
+                className="px-5 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl transition-colors flex items-center gap-2 shadow-sm"
+              >
+                {isImporting ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    Importation...
+                  </>
+                ) : (
+                  'Lancer l\'importation'
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </Modal>
     </div>
   );
 };
