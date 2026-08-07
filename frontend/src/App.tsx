@@ -8,6 +8,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { EquipmentPage } from './pages/EquipmentPage';
 import { UsersPage } from './pages/UsersPage';
 import { TicketsPage } from './pages/TicketsPage';
+import { NotificationsPage } from './pages/NotificationsPage';
 
 export const App: React.FC = () => {
   return (
@@ -24,6 +25,7 @@ export const App: React.FC = () => {
               <Route path="/users" element={<UsersPage />} />
               <Route path="/equipment" element={<EquipmentPage />} />
               <Route path="/tickets" element={<TicketsPage />} />
+              <Route path="/notifications" element={<NotificationsPage />} />
             </Route>
           </Route>
 

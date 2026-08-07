@@ -140,3 +140,22 @@ export interface PageResponse<T> {
   last: boolean;
   empty: boolean;
 }
+
+export type NotificationEventType =
+  | 'TICKET_CREATED'
+  | 'TICKET_ASSIGNED'
+  | 'TICKET_STATUS_CHANGED'
+  | 'TICKET_RESOLVED'
+  | 'TICKET_CLOSED'
+  | 'TICKET_COMMENT';
+
+export interface Notification {
+  id: number;
+  type: NotificationEventType;
+  title: string;
+  message: string;
+  relatedTicketId?: number;
+  read: boolean;
+  createdAt: string;
+}
+

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Monitor, Ticket, Users } from 'lucide-react';
+import { LayoutDashboard, Monitor, Ticket, Users, Bell } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 export const Sidebar: React.FC = () => {
@@ -32,6 +32,12 @@ export const Sidebar: React.FC = () => {
       name: isAdminOrTech ? 'File de Support' : 'Mes Tickets',
       path: '/tickets',
       icon: Ticket,
+      show: true,
+    },
+    {
+      name: 'Notifications',
+      path: '/notifications',
+      icon: Bell,
       show: true,
     },
   ].filter(item => item.show);

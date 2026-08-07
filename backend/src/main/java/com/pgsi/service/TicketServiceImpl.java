@@ -12,6 +12,7 @@ import com.pgsi.exception.ResourceNotFoundException;
 import com.pgsi.repository.EquipmentRepository;
 import com.pgsi.repository.TicketRepository;
 import com.pgsi.repository.UserRepository;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,11 +24,19 @@ public class TicketServiceImpl implements TicketService {
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
     private final EquipmentRepository equipmentRepository;
+    private final NotificationService notificationService;
+    private final EmailService emailService;
 
-    public TicketServiceImpl(TicketRepository ticketRepository, UserRepository userRepository, EquipmentRepository equipmentRepository) {
+    public TicketServiceImpl(TicketRepository ticketRepository,
+                             UserRepository userRepository,
+                             EquipmentRepository equipmentRepository,
+                             @Lazy NotificationService notificationService,
+                             EmailService emailService) {
         this.ticketRepository = ticketRepository;
         this.userRepository = userRepository;
         this.equipmentRepository = equipmentRepository;
+        this.notificationService = notificationService;
+        this.emailService = emailService;
     }
 
     @Override
@@ -38,8 +47,7 @@ public class TicketServiceImpl implements TicketService {
 
         Equipment equipment = null;
         if (request.getEquipmentId() != null) {
-            equipment = equipmentRepository.findById(request.getEquipmentId())
-                    .orElse(null);
+            equipment = equipmentRepository.findById(request.getEquipmentId()).orElse(null);
         }
 
         Ticket ticket = Ticket.builder()
@@ -53,6 +61,33 @@ public class TicketServiceImpl implements TicketService {
                 .build();
 
         Ticket savedTicket = ticketRepository.save(ticket);
+
+        // ── In-app + email notifications ─────────────────────────────────
+        // Notify all admins and technicians about the new ticket
+        userRepository.findAll().stream()
+                .filter(u -> hasRole(u, "ROLE_ADMIN") || hasRole(u, "ROLE_TECHNICIAN"))
+                .forEach(tech -> {
+                    notificationService.createNotification(
+                            tech.getId(),
+                            "TICKET_CREATED",
+                            "Nouveau ticket ouvert",
+                            String.format("L'employé %s a ouvert le ticket : « %s ».",
+                                    creator.getFullName() != null ? creator.getFullName() : creator.getUsername(),
+                                    savedTicket.getTitle()),
+                            savedTicket.getId()
+                    );
+                    emailService.sendTicketNotification(
+                            tech.getEmail(),
+                            tech.getFullName() != null ? tech.getFullName() : tech.getUsername(),
+                            "Nouveau ticket ouvert",
+                            String.format("L'employé <strong>%s</strong> a ouvert un nouveau ticket : « %s ».",
+                                    creator.getFullName() != null ? creator.getFullName() : creator.getUsername(),
+                                    savedTicket.getTitle()),
+                            savedTicket.getId(),
+                            savedTicket.getTitle()
+                    );
+                });
+
         return mapToDto(savedTicket);
     }
 
@@ -86,11 +121,18 @@ public class TicketServiceImpl implements TicketService {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", id));
 
+        TicketStatus previousStatus = ticket.getStatus();
+
         if (request.getStatus() != null) {
             ticket.setStatus(request.getStatus());
         }
 
+        boolean newAssignment = false;
         if (request.getAssignedToId() != null) {
+            if (ticket.getAssignedTo() == null ||
+                    !ticket.getAssignedTo().getId().equals(request.getAssignedToId())) {
+                newAssignment = true;
+            }
             User assignedTech = userRepository.findById(request.getAssignedToId())
                     .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.getAssignedToId()));
             ticket.setAssignedTo(assignedTech);
@@ -103,6 +145,39 @@ public class TicketServiceImpl implements TicketService {
         }
 
         Ticket updatedTicket = ticketRepository.save(ticket);
+
+        // ── Notify the ticket creator of status change ───────────────────
+        User creator = updatedTicket.getCreatedBy();
+        if (request.getStatus() != null && !request.getStatus().equals(previousStatus)) {
+            String statusLabel = translateStatus(request.getStatus());
+            String notifTitle  = "Statut de votre ticket mis à jour";
+            String notifMsg    = String.format(
+                    "Le statut de votre ticket « %s » est passé à : %s.",
+                    updatedTicket.getTitle(), statusLabel);
+
+            notificationService.createNotification(
+                    creator.getId(), "TICKET_STATUS_CHANGED", notifTitle, notifMsg, updatedTicket.getId());
+            emailService.sendTicketNotification(
+                    creator.getEmail(),
+                    creator.getFullName() != null ? creator.getFullName() : creator.getUsername(),
+                    notifTitle, notifMsg, updatedTicket.getId(), updatedTicket.getTitle());
+        }
+
+        // ── Notify newly assigned technician ────────────────────────────
+        if (newAssignment && updatedTicket.getAssignedTo() != null) {
+            User tech = updatedTicket.getAssignedTo();
+            String notifTitle = "Ticket assigné";
+            String notifMsg   = String.format(
+                    "Le ticket « %s » vous a été assigné.", updatedTicket.getTitle());
+
+            notificationService.createNotification(
+                    tech.getId(), "TICKET_ASSIGNED", notifTitle, notifMsg, updatedTicket.getId());
+            emailService.sendTicketNotification(
+                    tech.getEmail(),
+                    tech.getFullName() != null ? tech.getFullName() : tech.getUsername(),
+                    notifTitle, notifMsg, updatedTicket.getId(), updatedTicket.getTitle());
+        }
+
         return mapToDto(updatedTicket);
     }
 
@@ -112,6 +187,23 @@ public class TicketServiceImpl implements TicketService {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", id));
         ticketRepository.delete(ticket);
+    }
+
+    // ── Helpers ─────────────────────────────────────────────────────────────
+
+    private boolean hasRole(User user, String roleName) {
+        return user.getRoles() != null &&
+                user.getRoles().stream().anyMatch(r -> r.getName() != null &&
+                        r.getName().name().equals(roleName));
+    }
+
+    private String translateStatus(TicketStatus status) {
+        return switch (status) {
+            case OPEN        -> "Ouvert";
+            case IN_PROGRESS -> "En cours";
+            case RESOLVED    -> "Résolu";
+            case CLOSED      -> "Fermé";
+        };
     }
 
     private TicketDto mapToDto(Ticket ticket) {
