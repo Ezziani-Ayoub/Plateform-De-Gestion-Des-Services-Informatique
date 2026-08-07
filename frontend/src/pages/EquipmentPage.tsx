@@ -4,8 +4,9 @@ import { equipmentService } from '../services/equipment.service';
 import { Badge } from '../components/Badge';
 import { Modal } from '../components/Modal';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { QRCodeModal } from '../components/QRCodeModal';
 import { Equipment, EquipmentStatus, CreateEquipmentPayload, ExcelImportResult } from '../types';
-import { Plus, Search, Filter, Edit2, Trash2, Monitor, RefreshCw, AlertCircle, FileSpreadsheet, Upload, Download, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Filter, Edit2, Trash2, Monitor, RefreshCw, AlertCircle, FileSpreadsheet, Upload, Download, CheckCircle2, AlertTriangle, QrCode } from 'lucide-react';
 
 export const EquipmentPage: React.FC = () => {
   const {
@@ -27,6 +28,9 @@ export const EquipmentPage: React.FC = () => {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // QR Code Modal State
+  const [qrEquipment, setQrEquipment] = useState<Equipment | null>(null);
 
   // Excel Import Modal States
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -294,6 +298,13 @@ export const EquipmentPage: React.FC = () => {
                     <td className="px-6 py-4 text-xs text-gray-600">{item.location || '-'}</td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => setQrEquipment(item)}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-colors"
+                          title="Code QR"
+                        >
+                          <QrCode className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => handleOpenEditModal(item)}
                           className="p-1.5 rounded-lg text-gray-400 hover:text-sky-600 hover:bg-sky-50 transition-colors"
@@ -612,6 +623,12 @@ export const EquipmentPage: React.FC = () => {
           </form>
         </div>
       </Modal>
+
+      {/* QR Code Modal */}
+      <QRCodeModal
+        equipment={qrEquipment}
+        onClose={() => setQrEquipment(null)}
+      />
     </div>
   );
 };
